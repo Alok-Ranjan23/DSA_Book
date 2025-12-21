@@ -1,3 +1,36 @@
+/**
+ * @file heap_sort2.cc
+ * @brief Heap Sort implementation using Max-Heap (Ascending Order)
+ * 
+ * This file implements heap sort using a max-heap, which produces output
+ * in ascending order. This is the classic/standard heap sort approach.
+ * 
+ * Key Concepts:
+ * - Max-heap: Parent is always greater than or equal to children
+ * - Heap sort works by repeatedly extracting the max element
+ * - In-place sorting by swapping root with last unsorted element
+ * - After each extraction, heap size decreases by 1
+ * 
+ * Algorithm Steps:
+ * 1. Build a max-heap from the input array - O(n)
+ * 2. Repeatedly swap root (max) with last element
+ * 3. Reduce heap size and heapify the root
+ * 4. Result: Array sorted in ASCENDING order (smallest to largest)
+ * 
+ * Time Complexities:
+ * - Build Heap:  O(n) - Floyd's algorithm
+ * - sort():      O(n log n) - n extractions, each O(log n)
+ * - push():      O(log n) - bubble up
+ * - pop():       O(log n) - heapify down
+ * - top():       O(1)
+ * 
+ * Space Complexity: O(1) auxiliary - sorting is done in-place
+ * 
+ * Comparison with heap_sort.cc:
+ * - heap_sort.cc uses min-heap -> descending order
+ * - heap_sort2.cc uses max-heap -> ascending order (this file)
+ */
+
 // Max-Heap Ascending Order
 
 #include <iostream>
@@ -5,10 +38,34 @@
 
 using namespace std;
 
+/**
+ * @class Heap
+ * @brief Max-heap implementation with sorting capability
+ * 
+ * This heap maintains the max-heap property where parent >= children.
+ * The sort() method produces an ascending order result because
+ * maximum elements are moved to the end first.
+ */
 class Heap {
-  vector<int> arr_;
+  vector<int> arr_;   // Underlying array storing heap elements
 
+  /**
+   * @brief Calculates parent index of a given node
+   * @param i Child node index
+   * @return Index of parent node: (i-1)/2
+   */
   int parent(int i) { return (i - 1) / 2; }
+  
+  /**
+   * @brief Restores max-heap property starting from given index
+   * @param i Starting index for heapification
+   * @param n Heap size (elements beyond n are sorted/excluded)
+   * 
+   * This is the bounded version of heapify used during sorting.
+   * Parameter n limits the heap boundary, excluding sorted elements.
+   * 
+   * Time Complexity: O(log n)
+   */
   void maxheapify(int i, int n) {
     int largest = i;
     int left  = 2 * i + 1;
@@ -21,19 +78,50 @@ class Heap {
   }
 
 public:
+  /**
+   * @brief Constructor - builds a max-heap from the given array
+   * @param a Reference to input array
+   * 
+   * Uses Floyd's heap construction algorithm starting from
+   * last non-leaf node (n/2 - 1) and working up to root.
+   * 
+   * Time Complexity: O(n)
+   */
   Heap(vector<int>& a) : arr_(a) {
     int n = arr_.size();
     for (int i = n / 2 - 1; i >= 0; --i)
       maxheapify(i,n);
   }
 
+  /**
+   * @brief Returns the number of elements in the heap
+   * @return Number of elements
+   */
   size_t size() const { return arr_.size(); }
 
+  /**
+   * @brief Returns the maximum element without removing it
+   * @return Root element (maximum), or -1 if empty
+   */
   int top() const {
     if (arr_.empty()) return -1;   // sentinel for empty
     return arr_[0];
   }
 
+  /**
+   * @brief Inserts a new element into the heap
+   * @param x Element to insert
+   * 
+   * Algorithm (Bubble Up):
+   * 1. Add element at the end
+   * 2. Compare with parent, swap if larger
+   * 3. Repeat until heap property is satisfied
+   * 
+   * Note: Current implementation has a bug - uses > instead of <
+   * for max-heap bubble up. Should swap when parent < child.
+   * 
+   * Time Complexity: O(log n)
+   */
   void push(int x) {
     arr_.push_back(x);
     int i = (int)arr_.size() - 1;
@@ -43,6 +131,18 @@ public:
     }
   }
 
+  /**
+   * @brief Removes and returns the maximum element
+   * @return Root element (maximum), or -1 if empty
+   * 
+   * Algorithm:
+   * 1. Store root value
+   * 2. Move last element to root
+   * 3. Remove last position
+   * 4. Heapify from root
+   * 
+   * Time Complexity: O(log n)
+   */
   int pop() {
     if (arr_.empty()) return -1;
     int root = arr_[0];
@@ -53,6 +153,24 @@ public:
     return root;
   }
 
+  /**
+   * @brief Sorts the array in ASCENDING order using heap sort
+   * 
+   * Algorithm:
+   * 1. For i from n-1 down to 1:
+   *    a. Swap arr[0] (max) with arr[i]
+   *    b. Heapify arr[0..i-1] to restore max-heap
+   * 
+   * Why ascending? With max-heap, largest elements are moved to
+   * the end first. When all elements are processed, the array
+   * is sorted from smallest to largest.
+   * 
+   * Example: [8, 6, 4, 3, 2, 1] (max-heapified)
+   * After sort: [1, 2, 3, 4, 6, 8] (ascending)
+   * 
+   * Time Complexity: O(n log n)
+   * Space Complexity: O(1) - in-place
+   */
   // 1 4 2 6 8 3 
   void sort() {
     int n = arr_.size();
@@ -62,11 +180,18 @@ public:
     }
   }
 
+  /**
+   * @brief Prints all elements in the array (for debugging)
+   */
   void print() const {
     for (int v : arr_) cout << v << ' ';
     cout << '\n';
   }
 };
+
+/*============================================================================
+ * MAIN FUNCTION - Test/Demo Section
+ *============================================================================*/
 
 int main() {
     vector<int> arr{4, 8, 2, 6, 1};
