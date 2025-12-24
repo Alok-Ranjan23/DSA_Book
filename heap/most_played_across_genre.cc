@@ -1,72 +1,94 @@
 /**
  * @file most_played_across_genre.cc
- * @brief Find Top K Songs Across Multiple Genres using Min-Heap
+ * @brief Top K Songs Across Multiple Genres using K-Way Merge with Max-Heap
  * 
- * This file solves the problem of finding the k most played songs when
- * songs are organized into multiple genre lists. Uses the same min-heap
- * approach as k_most_played.cc but handles nested data structures.
+ * This file implements a function that finds the top k most-listened songs
+ * across multiple genre lists, where each genre list is already sorted
+ * by play count in descending order.
  * 
  * Key Concepts:
- * - Min-heap of size k: efficient tracking of k largest elements
- * - Flattening nested structures: process all songs from all genres
- * - Same "Top K" pattern applied to multi-dimensional input
+ * - K-Way Merge: Classic technique for merging m sorted lists
+ * - Max-Heap: Efficiently extracts the global maximum from m candidates
+ * - Lazy Loading: Only one song per genre in the heap at any time
  * 
  * Algorithm:
- * 1. Iterate through all genres
- * 2. For each genre, iterate through all songs
- * 3. Push each song (plays, title) into min-heap
- * 4. If heap size exceeds k, pop the minimum (least played)
- * 5. After processing all songs, heap contains k most played
+ * 1. Initialize heap with first (most-played) song from each genre
+ * 2. Pop the maximum (globally most-played song)
+ * 3. Push the next song from that same genre (if any remain)
+ * 4. Repeat until we have k songs
  * 
- * Note: Although input lists are pre-sorted within each genre, we don't
- * leverage this property. An optimized version could use a k-way merge.
+ * Why this works:
+ * - Since each genre list is pre-sorted, the next candidate from any genre
+ *   is always the front element of that genre's remaining list
+ * - The heap always contains at most m elements (one per genre)
+ * - We always extract the global maximum efficiently
  * 
- * Time Complexity: O(n log k) where n is total songs across all genres
- * Space Complexity: O(k) - only store k elements in heap
+ * Time Complexities:
+ * - Initialization:  O(m log m) - push m elements to heap
+ * - Main Loop:       O(k log m) - k iterations, each with pop/push O(log m)
+ * - Total:           O(m log m + k log m) = O((m + k) log m)
+ * 
+ * Space Complexity: O(m) - heap stores at most one song per genre
  */
 
 #include <iostream>
+#include <string>
 #include <vector>
 #include <queue>
 using namespace std;
 
+/*============================================================================
+ * FUNCTION IMPLEMENTATION
+ *============================================================================*/
+
 /**
- * @brief Finds the k most played songs across all genre lists
- * @param inputs Vector of genre lists, each containing (title, plays) pairs
+ * @brief Finds the top k most-listened songs across all genres
+ * @param genres Vector of genre lists, each containing (title, plays) pairs
+ *               Each genre list is pre-sorted by plays (descending)
  * @param k Number of top songs to return
- * @return Vector of song titles (k most played, in any order)
+ * @return Vector of k song titles with highest play counts
  * 
- * Implementation Details:
- * - Flattens the nested structure with two loops
- * - Uses min-heap to track k largest play counts
- * - Returns titles extracted from heap
+ * Heap Structure: {{plays, title}, genre_index}
+ * - plays is first for max-heap ordering by play count
+ * - genre_index tracks which list the song came from
  * 
- * Time Complexity: O(n log k) where n = total songs
- * Space Complexity: O(k)
+ * Time Complexity: O((m + k) log m) where m = number of genres
  */
-vector<string> top_k(vector<vector<pair<string, int>>>& inputs, int k) {
-  vector<string> title;
+vector<string> most_listened_across_genres(vector<vector<pair<string,int>>>& genres, int k) {
+  vector<string> res;
   
-  // Min-heap: smallest play count at top
-  // Pair: (plays, title) - plays first for proper ordering
-  priority_queue<pair<int,string>,vector<pair<int,string>>,greater<pair<int,string>>> pq;
+  // Max-heap: {{plays, title}, genre_index}
+  // Default priority_queue is max-heap, orders by plays (first element)
+  priority_queue<pair<pair<int,string>,int>> pq;
   
-  // Process all songs from all genres
-  for(auto& vec: inputs) {
-    for(auto& p: vec) {
-      pq.push({p.second,p.first});  // Push (plays, title)
-      
-      // Maintain heap size at k
-      if(pq.size()>static_cast<size_t>(k)) pq.pop();
-    }
+  int n = genres.size();  // m = number of genres
+  
+  // Step 1: Initialize heap with first song from each genre
+  // Each genre's first song is its most-played (pre-sorted)
+  for(int i=0;i<n;++i) {
+    pq.push({{genres[i][0].second,genres[i][0].first},i});
   }
   
-  // Extract remaining k songs from heap
+  // Track current index in each genre's song list
+  vector<int> index_vec(n,0);
+  
+  // Step 2-4: Extract max, push next from same genre, repeat
   while(!pq.empty()) {
-    title.push_back(pq.top().second);
-    pq.pop();
+    // Pop globally most-played song
+    auto p = pq.top(); pq.pop();
+    res.push_back(p.first.second);
+    
+    // Done if we have k songs
+    if(res.size()==static_cast<size_t>(k)) break;
+    
+    // Push next song from the same genre (if available)
+    int index = p.second;
+    int j = ++index_vec[index];
+    if(static_cast<size_t>(j)==genres[index].size()) continue;
+    pq.push({{genres[index][j].second,genres[index][j].first},index});
   }
-  return title;
+  
+  return res;
 }
 
 /*============================================================================
@@ -75,29 +97,35 @@ vector<string> top_k(vector<vector<pair<string, int>>>& inputs, int k) {
 
 // To execute C++, please define "int main()"
 int main() {
-  // Songs organized by genre: Pop, Country, Rock
-  // Each genre list is sorted by plays (descending)
-  vector<vector<pair<string, int>>> inputs {
-    {
-      {"Coding In The Deep", 123},      // Pop - most played in genre
-      {"Someone Like GNU",99},
+  // Test data: 3 genres with songs sorted by plays (descending)
+  vector<vector<pair<string,int>>> genres {
+    {  // Pop
+      {"Coding In The Deep", 123},
+      {"Someone Like GNU", 99},
       {"Hello World", 98}
     },
-    {
-      {"Ring Of Firewalls",  217}        // Country - only one song
+    {  // Country
+      {"Ring Of Firewalls", 217}
     },
-    {
-      {"Boolean Rhapsody", 184},         // Rock - most played in genre
+    {  // Rock
+      {"Boolean Rhapsody", 184},
       {"Merge Together", 119},
       {"Hey Queue", 102}
     }
   };
   
-  int k=5;
+  int k = 5;
   
-  // Expected output: Top 5 across all genres by play count
-  // 217, 184, 123, 119, 102 -> corresponding titles
-  for(auto& title: top_k(inputs,k)) cout<<title<<"\n";
+  // Expected output (top 5 by plays):
+  // 1. Ring Of Firewalls  (217)
+  // 2. Boolean Rhapsody   (184)
+  // 3. Coding In The Deep (123)
+  // 4. Merge Together     (119)
+  // 5. Hey Queue          (102)
+  for(auto& x : most_listened_across_genres(genres, k)) {
+    cout << x << "\n";
+  }
+  
   return 0;
 }
 
@@ -111,14 +139,12 @@ int main() {
  * an array of songs from a given genre. Each song consists of a 
  * `[title, plays]` pair.
  * 
- * - Each list is non-empty and **already sorted** from most to least 
- *   played songs.
- * - There are `n > 0` songs in total, and each song appears in at most 
- *   one list.
+ * - Each list is non-empty and **already sorted** from most to least played.
+ * - There are `n > 0` songs in total, and each song appears in at most one list.
  * 
  * You are also given a positive integer `k` satisfying `1 <= k <= n`. 
  * Return the titles of the top `k` most-listened songs across all genres, 
- * in order from most to least listened. It doesn't matter how you break ties.
+ * in order from most to least listened. Ties can be broken arbitrarily.
  * 
  * Example:
  * genres = [
@@ -138,18 +164,18 @@ int main() {
  * ]
  * k = 5
  * Output: [
- *   "Ring Of Firewalls",      (217 plays)
- *   "Boolean Rhapsody",       (184 plays)
- *   "Coding In The Deep",     (123 plays)
- *   "Merge Together",         (119 plays)
- *   "Hey Queue"               (102 plays)
+ *   "Ring Of Firewalls",
+ *   "Boolean Rhapsody",
+ *   "Coding In The Deep",
+ *   "Merge Together",
+ *   "Hey Queue"
  * ]
  * 
  * Constraints:
  * - The length of `genres`, `m`, is at least `1` and at most `10^5`.
  * - The total number of songs, `n`, is at least `1` and at most `10^5`.
  * - Song titles are unique and have at most `50` characters.
- * - Each genre list is already sorted from most to least played songs.
+ * - Each genre list is already sorted from most to least played (ties allowed).
  * - `1 <= k <= n`.
  * 
  *============================================================================*/
