@@ -7,7 +7,8 @@
 CC := g++
 CFLAGS := -std=c++17 -Wall
 
-PROGRAMS := heap_implementation heap_sort heap_sort2 k_most_played top_songs_class top_songs_class_with_updates popular_song_class most_played_across_genre sum_of_first_k
+# Automatically find all .cc files and create program names
+PROGRAMS := $(basename $(wildcard *.cc)) 
 
 all: $(PROGRAMS)
 

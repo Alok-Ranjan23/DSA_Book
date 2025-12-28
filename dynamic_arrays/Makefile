@@ -7,7 +7,8 @@
 CC := g++
 CFLAGS := -std=c++17 -Wall
 
-PROGRAMS := dynamic_arrays1 dynamic_arrays2
+# Automatically find all .cc files and create program names
+PROGRAMS := $(basename $(wildcard *.cc)) 
 
 all: $(PROGRAMS)
 

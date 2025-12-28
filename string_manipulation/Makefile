@@ -7,7 +7,8 @@
 CC := g++
 CFLAGS := -std=c++17 -Wall
 
-PROGRAMS := string_join string_matching string_split
+# Automatically find all .cc files and create program names
+PROGRAMS := $(basename $(wildcard *.cc)) 
 
 all: $(PROGRAMS)
 
