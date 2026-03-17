@@ -1,9 +1,69 @@
+/**
+ * @file delete_op.cc
+ * @brief Process Delete Operations on an Array using Pre-sorted Index Mapping
+ * 
+ * This file implements a function that processes a sequence of delete operations
+ * on an array. Operations can either delete by index or delete the smallest
+ * remaining element.
+ * 
+ * Key Concepts:
+ * - Indirect Sorting: Sort indices by their values (not the values themselves)
+ *   to precompute the order for "delete smallest" operations
+ * - Stable Sort: Preserves original index order for equal values, ensuring
+ *   tie-breaking by smaller index
+ * - Exclusion Set: O(1) lookup to check if an index has been deleted
+ * - Lazy Pointer (smallIdx): Tracks the next smallest un-deleted element
+ *   in the pre-sorted order, avoiding re-scanning
+ * 
+ * Algorithm:
+ * 1. Create include_index = [0, 1, ..., n-1]
+ * 2. Stable-sort include_index by nums[i] ascending
+ *    → include_index[0] is the index of the smallest element,
+ *      include_index[1] is the next smallest, etc.
+ * 3. For each operation:
+ *    a. If op >= 0: mark index op as excluded (deleted)
+ *    b. If op == -1: advance smallIdx past excluded indices,
+ *       then mark include_index[smallIdx] as excluded
+ * 4. Collect all non-excluded elements in original order
+ * 
+ * Why stable_sort?
+ * - When two elements have equal values, the one with the smaller
+ *   original index should be deleted first (per problem spec).
+ * - Stable sort preserves the original index order for equal values.
+ * 
+ * Time Complexity: O(n log n) for the sort + O(n + m) for processing operations
+ *   where m = number of operations
+ * Space Complexity: O(n) for the index array and exclusion set
+ */
+
 #include <algorithm>
 #include <iostream>
 #include <vector>
 #include <unordered_set>
 using namespace std;
 
+/*============================================================================
+ * FUNCTION IMPLEMENTATION
+ *============================================================================*/
+
+/**
+ * @brief Processes delete operations and returns the remaining elements
+ * @param nums Original array of integers
+ * @param op Array of operations: >= 0 means delete by index, -1 means delete smallest
+ * @return Vector of remaining elements in their original order
+ * 
+ * Data Structures:
+ * - include_index: Indices [0..n-1] sorted by nums value (ascending)
+ *   Used to quickly find the next smallest un-deleted element.
+ * - exclude: Set of deleted indices for O(1) membership checks
+ * - smallIdx: Pointer into include_index tracking the next candidate
+ *   for "delete smallest" operations. Only advances forward.
+ * 
+ * Time Complexity: O(n log n + m), where m = op.size()
+ *   - Sorting indices: O(n log n)
+ *   - Processing ops: O(n + m) amortized (smallIdx only moves forward)
+ *   - Building result: O(n)
+ */
 vector<int> delete_op(vector<int>& nums,vector<int>& op) {
   vector<int> include_index;
   unordered_set<int> exclude;
@@ -37,16 +97,25 @@ vector<int> delete_op(vector<int>& nums,vector<int>& op) {
   return res;
 }
 
-// To execute C++, please define "int main()"
+/*============================================================================
+ * MAIN FUNCTION - Test/Demo Section
+ *============================================================================*/
+
 int main() {
+  // Test 1: Mixed operations — expected: [50]
+  // Delete index 2 (70), delete smallest (20), delete index 4 (80), delete smallest (30)
   vector<int> nums {50,30,70,20,80};
   vector<int> op {2,-1,4,-1};
   for (auto&x : delete_op(nums,op)) cout<<x<<" ";
   cout<<"\n";
+
+  // Test 2: No operations — expected: [1, 2, 3]
   nums = {1,2,3};
   op = {};
   for (auto&x : delete_op(nums,op)) cout<<x<<" ";
   cout<<"\n";
+
+  // Test 3: Delete all via smallest — expected: []
   nums = {1,2,3};
   op = {-1,-1,-1};
   for (auto&x : delete_op(nums,op)) cout<<x<<" ";
@@ -54,32 +123,26 @@ int main() {
   return 0;
 }
 
-// # Delete Operations
-
-// You're given an array of `n` integers, `nums`, and another array of at most `n` integers, `operations`, where each integer represents an _operation_ to be performed on `nums`.
-
-// - If the operation number is `k ≥ 0`, the operation is "delete the number at index `k` in the **original** array if it has not been deleted yet. Otherwise, do nothing."
-// - If the operation number is `-1`, the operation is "delete the smallest number in `nums` that has not been deleted yet, breaking ties by smaller index."
-
-// Return the state of `nums` after applying all the operations. Every number in operations is guaranteed to be between `-1` and `n-1` inclusive.
-
-// Example 1: nums = [50, 30, 70, 20, 80], operations = [2, -1, 4, -1]
-// Output: [50]
-// Explanation:
-// - Delete index 2 in the original array, element 70: [50, 30, 20, 80]
-// - Delete 20, the smallest non-deleted number: [50, 30, 80]
-// - Delete index 4 in the original array, element 80: [50, 30]
-// - Delete 30, the smallest non-deleted number: [50]
-
-// Example 2: nums = [1, 2, 3], operations = []
-// Output: [1, 2, 3]. No operations to perform.
-
-// Example 3: nums = [1, 2, 3], operations = [-1, -1, -1]
-// Output: []. All elements are deleted.
-
-// Constraints:
-
-// - `1 ≤ n ≤ 10^5`
-// - Each element in `nums` is between `-10^9` and `10^9`
-// - `operations.length ≤ n`
-// - Each element in `operations` is between `-1` and `n-1`
+/*============================================================================
+ * PROBLEM STATEMENT (for reference)
+ *============================================================================
+ * 
+ * # Delete Operations
+ * 
+ * You're given an array of n integers, nums, and another array of at most n
+ * integers, operations, where each integer represents an operation:
+ * 
+ * - If the operation number is k >= 0, delete the number at index k in the
+ *   original array if it has not been deleted yet. Otherwise, do nothing.
+ * - If the operation number is -1, delete the smallest number in nums that
+ *   has not been deleted yet, breaking ties by smaller index.
+ * 
+ * Return the state of nums after applying all the operations.
+ * 
+ * Constraints:
+ * - 1 <= n <= 10^5
+ * - Each element in nums is between -10^9 and 10^9
+ * - operations.length <= n
+ * - Each element in operations is between -1 and n-1
+ * 
+ *============================================================================*/
