@@ -12,8 +12,10 @@
  * - Hashing a vector<string> via a custom hash functor (VectorStringHash)
  * - Duplicate detection with an unordered_set
  *
- * Time Complexity: O(N log N)
- *   - Sorting each user's IP list dominates (each list is small, <= 10 IPs)
+ * Time Complexity: O(N)
+ *   - N = number of users. Each list has <= 10 IPs (constant), so sorting and
+ *     hashing each list is O(1) work; the log factor is log(list size), not
+ *     log(N). Total work is therefore linear in the number of users.
  *
  * Space Complexity: O(N)
  *   - Hash set stores up to N canonicalized IP lists
@@ -61,7 +63,7 @@ struct VectorStringHash {
  * 3. Otherwise, insert the sorted list and continue.
  * 4. If no duplicates are found, return false.
  */
-//Time O(NlogN)
+//Time O(N)  (each IP list is bounded by 10 entries, so per-user work is O(1))
 //Space O(N)
 bool is_same_user(vector<pair<string, vector<string>>>& users) {
   unordered_set<vector<string>,VectorStringHash> uset;
