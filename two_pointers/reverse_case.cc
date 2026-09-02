@@ -6,18 +6,23 @@
  * letters equals the reverse of the word formed by uppercase letters.
  * 
  * Key Concepts:
- * - Two Pointer Technique: Start from both ends
+ * - Two Pointer Technique: Start from both ends, allowed to cross
  * - Selective character matching: skip characters based on case
  * - Case conversion using ASCII arithmetic (difference of 32)
  * 
  * Time Complexity: O(n) where n is string length
+ *   - Each pointer (l, h) travels at most n steps → 2n iterations total
+ *   - Pointers are allowed to cross so all n/2 pairs are always compared
  * Space Complexity: O(1) - only uses constant extra space
  * 
  * Algorithm:
- * - Left pointer finds lowercase letters (from start)
- * - Right pointer finds uppercase letters (from end)
+ * - Left pointer finds lowercase letters (from start), skips uppercase
+ * - Right pointer finds uppercase letters (from end), skips lowercase
+ * - Pointers are allowed to cross past each other so that "crossing pairs"
+ *   (where a lowercase char sits to the right of its matching uppercase)
+ *   are still explicitly compared and not silently skipped
  * - Compare: lowercase at left should equal uppercase at right + 32
- * - Advance pointers accordingly
+ * - Loop ends when l exhausts the string (l >= n) or h goes below 0
  */
 
 #include <iostream>
@@ -27,7 +32,12 @@ using namespace std;
 /**
  * @brief Checks if lowercase word equals reverse of uppercase word
  * @param s String with exactly half lowercase and half uppercase letters
- * @return true if lowercase letters reversed equal uppercase letters
+ * @return true if lowercase letters (L→R) match uppercase letters (R→L)
+ * 
+ * The pointers are intentionally allowed to cross past each other.
+ * Stopping at l==h misses "crossing pairs" — cases where a lowercase
+ * char appears to the right of its paired uppercase char in the string.
+ * Allowing l and h to scan the full string ensures every pair is compared.
  * 
  * Example: "haDrRAHd" -> lowercase "hard", uppercase "DRAH"
  *          "DRAH" reversed = "HARD" which matches "hard" (ignoring case)
@@ -36,11 +46,11 @@ bool reverse_match(string& s) {
   int n = s.size();
   int l = 0;
   int h = n - 1;
-  while(l<h) {
-    if(s[l]>='A' && s[l]<='Z') l++;
-    else if(s[h]>='a' && s[h]<='z') h--;
+  while(l < n && h >= 0) {               // allow pointers to cross
+    if(s[l]>='A' && s[l]<='Z') l++;      // skip uppercase on left
+    else if(s[h]>='a' && s[h]<='z') h--; // skip lowercase on right
     else {
-      if(s[l++]!=s[h--]+32) return false;
+      if(s[l++]!=s[h--]+32) return false; // compare matched pair
     }
   }
   return true;
